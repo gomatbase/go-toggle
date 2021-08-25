@@ -1,29 +1,24 @@
 package toggle
 
 import (
-	"log"
-	"os"
 	"sync"
+
+	"github.com/gomatbase/go-error"
+	"github.com/gomatbase/go-log"
 )
 
-type toggleError string
-
-func (te toggleError) Error() string {
-	return string(te)
-}
-
 const (
-	ToggleableExistsError   = toggleError("toggleable already exists")
-	NotEnoughOptionsError   = toggleError("toggleables need at least 2 options to toggle")
-	ToggleableNotFoundError = toggleError("toggleable does not exist")
-	InvalidToggleError      = toggleError("toggle value is out of bounds for the toggleable")
+	ToggleableExistsError   = err.Error("toggleable already exists")
+	NotEnoughOptionsError   = err.Error("toggleables need at least 2 options to toggle")
+	ToggleableNotFoundError = err.Error("toggleable does not exist")
+	InvalidToggleError      = err.Error("toggle value is out of bounds for the toggleable")
 )
 
 var (
 	toggleables = make(map[string]*toggleable)
 	toggles     = make(map[string]int)
 	mutex       = sync.Mutex{}
-	l           = log.New(os.Stdout, "TGL - ", 0)
+	l, _        = log.Get("TGL")
 )
 
 type toggleable struct {
@@ -57,7 +52,7 @@ func Add(name string, options ...func() error) error {
 		if toggle < len(options) && toggle >= 0 {
 			toggleable.active = toggle
 		} else {
-			l.Println("Invalid toggle value for toggleable", name, ":", toggle)
+			l.Debug("Invalid toggle value for toggleable", name, ":", toggle)
 		}
 	}
 

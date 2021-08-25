@@ -3,6 +3,8 @@ package toggle
 import (
 	"fmt"
 	"testing"
+
+	err "github.com/gomatbase/go-error"
 )
 
 func TestAdd(t *testing.T) {
@@ -36,9 +38,9 @@ func TestExecuteAndToggle(t *testing.T) {
 	if e := Toggle("TestExecute", 4); e != nil {
 		t.Error("Failed to set preemptive toggle value")
 	}
-	result1 := toggleError("1")
-	result2 := toggleError("2")
-	result3 := toggleError("3")
+	result1 := err.Error("1")
+	result2 := err.Error("2")
+	result3 := err.Error("3")
 	_ = Add("TestExecute", func() error {
 		return result1
 	}, func() error {
