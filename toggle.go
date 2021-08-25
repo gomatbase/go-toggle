@@ -1,8 +1,10 @@
 package toggle
 
 import (
+	"strconv"
 	"sync"
 
+	"github.com/gomatbase/go-env"
 	"github.com/gomatbase/go-error"
 	"github.com/gomatbase/go-log"
 )
@@ -45,19 +47,45 @@ func Add(name string, options ...func() error) error {
 		return NotEnoughOptionsError
 	}
 
-	toggleable := toggleable{
-		options: options,
-	}
+	active := -1
+	// we first check if there was already a call to set the toggleable at a specific value
 	if toggle, found := toggles[name]; found {
 		if toggle < len(options) && toggle >= 0 {
-			toggleable.active = toggle
+			active = toggle
 		} else {
 			l.Debug("Invalid toggle value for toggleable", name, ":", toggle)
 		}
 	}
+	// even if the toggle was set manually before it was setup it was invalid
+	if active == -1 {
+		active = getActiveToggleFromEnvironment(name)
+	}
+
+	toggleable := toggleable{
+		options: options,
+		active:  active,
+	}
 
 	toggleables[name] = &toggleable
 	return nil
+}
+
+func getActiveToggleFromEnvironment(name string) int {
+	variableName := "toggleable." + name
+	if e := env.Var(variableName).
+		From(env.CmlArgumentsSource().Name("T" + name)).
+		Default("0").
+		Add(); e != nil {
+		l.Debugf("Unable to register toggleable variable %s : %v", name, e)
+		return 0
+	}
+
+	if v, e := strconv.Atoi(env.Get(variableName).(string)); e != nil {
+		l.Debug("Invalid active toggleable value for toggleable", name)
+		return 0
+	} else {
+		return v
+	}
 }
 
 func Execute(name string) error {

@@ -2,8 +2,10 @@ package toggle
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
+	"github.com/gomatbase/go-env"
 	err "github.com/gomatbase/go-error"
 )
 
@@ -92,7 +94,8 @@ func TestExecuteAndToggle(t *testing.T) {
 }
 
 func ExampleRun() {
-	_ = Toggle("ExampleRun", 1)
+	os.Args = []string{"app", "-TExampleRun", "1"}
+	env.Load() // For testing purposes the environment has to be reloaded after updating the cml arguments
 	_ = Run("ExampleRun", func() error {
 		fmt.Println("1")
 		return nil
