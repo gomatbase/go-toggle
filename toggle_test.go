@@ -96,13 +96,14 @@ func TestExecuteAndToggle(t *testing.T) {
 func ExampleRun() {
 	os.Args = []string{"app", "-TExampleRun", "1"}
 	env.Load() // For testing purposes the environment has to be reloaded after updating the cml arguments
-	_ = Run("ExampleRun", func() error {
+	_ = Add("ExampleRun", func() error {
 		fmt.Println("1")
 		return nil
 	}, func() error {
 		fmt.Println("2")
 		return nil
 	})
+	_ = Execute("ExampleRun")
 	_ = Toggle("ExampleRun", 0)
 	_ = Execute("ExampleRun")
 	_ = Run("ExampleRun", func() error {
@@ -116,5 +117,5 @@ func ExampleRun() {
 	// Output:
 	// 2
 	// 1
-	// 1
+	// 2
 }

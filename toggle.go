@@ -29,10 +29,15 @@ type toggleable struct {
 }
 
 func Run(name string, options ...func() error) error {
-	if e := Add(name, options...); e != nil && e != ToggleableExistsError {
-		return e
+	mutex.Lock()
+	active := getActiveToggleFromEnvironment(name)
+	mutex.Unlock()
+
+	if active < 0 || active >= len(options) {
+		l.Error("Trying to run toggleable %s with incorrect toggle value : %s. Defaulting to 0", name, active)
+		active = 0
 	}
-	return Execute(name)
+	return options[active]()
 }
 
 func Add(name string, options ...func() error) error {
@@ -54,6 +59,7 @@ func Add(name string, options ...func() error) error {
 			active = toggle
 		} else {
 			l.Debug("Invalid toggle value for toggleable", name, ":", toggle)
+			delete(toggles, name)
 		}
 	}
 	// even if the toggle was set manually before it was setup it was invalid
@@ -71,6 +77,11 @@ func Add(name string, options ...func() error) error {
 }
 
 func getActiveToggleFromEnvironment(name string) int {
+
+	if toggle, found := toggles[name]; found {
+		return toggle
+	}
+
 	variableName := "toggleable." + name
 	if e := env.Var(variableName).
 		From(env.CmlArgumentsSource().Name("T" + name)).
@@ -84,6 +95,7 @@ func getActiveToggleFromEnvironment(name string) int {
 		l.Debug("Invalid active toggleable value for toggleable", name)
 		return 0
 	} else {
+		toggles[name] = v
 		return v
 	}
 }
@@ -101,18 +113,15 @@ func Execute(name string) error {
 
 func Toggle(name string, toggle int) error {
 	mutex.Lock()
+	defer mutex.Unlock()
+	toggles[name] = toggle
 	toggleable, found := toggleables[name]
-	if !found {
-		toggles[name] = toggle
-		mutex.Unlock()
-		return nil
-	}
-	mutex.Unlock()
-
-	if toggle < len(toggleable.options) && toggle >= 0 {
-		toggleable.active = toggle
-	} else {
-		return InvalidToggleError
+	if found {
+		if toggle < len(toggleable.options) && toggle >= 0 {
+			toggleable.active = toggle
+		} else {
+			return InvalidToggleError
+		}
 	}
 
 	return nil
